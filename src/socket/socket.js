@@ -9,7 +9,12 @@ const SOCKET_URL = isLocal
   : "https://chatapp-backend-191n.onrender.com";
 
 const socket = io(SOCKET_URL, {
-  transports: ["websocket", "polling"],
+  // Pehle polling se secure handshake karega, fir websocket par upgrade hoga
+  transports: ["polling", "websocket"],
+  reconnection: true,
+  reconnectionAttempts: 10,
+  reconnectionDelay: 2000,
+  withCredentials: true,
 });
 
 export default socket;
