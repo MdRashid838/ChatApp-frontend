@@ -4,14 +4,13 @@ import Navbar from "../components/sidebar/Navbar";
 import Sidebar from "../components/sidebar/Sidebar";
 import ChatWindow from "../components/chat/ChatWindow";
 import ProfilePanel from "../components/profile/ProfilePanel";
+import API from "../api/axios";
 
 function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null); // Chat window active user
-  const [activeProfileUserId, setActiveProfileUserId] = useState(null); // Profile panel user ID
+  const [selectedChat, setSelectedChat] = useState(null); // Active Chat room object
+  const [activeProfileUserId, setActiveProfileUserId] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
-  
-  // Follow/Unfollow realtime sync trigger
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const handleFollowUpdate = () => {
@@ -27,26 +26,45 @@ function Home() {
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
     setIsLoggedIn(false);
-    setSelectedUser(null);
+    setSelectedChat(null);
     setActiveProfileUserId(null);
     setShowProfile(false);
   };
 
-  // Jab Search dropdown se koi user select karein
+  // Jab search se user select ho
   const handleSelectFromSearch = (user) => {
     setActiveProfileUserId(user._id);
     setShowProfile(true);
   };
 
-  // Jab TopNavbar ke Profile icon par click karein (Logged-in user profile)
+  // Profile icon click (My Profile)
   const handleMyProfileClick = () => {
-    setActiveProfileUserId(null); // null = current logged-in user
+    setActiveProfileUserId(null);
     setShowProfile(true);
+  };
+
+  // Profile Panel ke "Message" button par click hone par:
+  const handleStartChatFromProfile = async (targetUser) => {
+    try {
+      // 1. Backend se Chat ID dhoondho ya banao
+      const res = await API.post("/chat", { userId: targetUser._id });
+      const chatData = res.data;
+
+      // 2. ChatWindow ke liye selectedChat set karo
+      setSelectedChat(chatData);
+
+      // 3. Profile panel close karo
+      setShowProfile(false);
+
+      // 4. Sidebar me new chat list turant update ho
+      setRefreshTrigger((prev) => prev + 1);
+    } catch (err) {
+      console.error("Start chat error:", err);
+    }
   };
 
   return (
     <div className="flex flex-col h-screen w-full bg-slate-950 text-white overflow-hidden">
-      {/* Top Navbar */}
       <TopNavbar
         isLoggedIn={isLoggedIn}
         onLogout={handleLogout}
@@ -55,84 +73,38 @@ function Home() {
         onFollowChange={handleFollowUpdate}
       />
 
-      {/* Main Content Area */}
       <div className="flex flex-1 w-full overflow-hidden">
         {isLoggedIn ? (
           <>
-            {/* App Left Nav & User Chat List */}
             <Navbar />
-            <Sidebar onSelectUser={(user) => setSelectedUser(user)} />
             
-            {/* Active Chat Window */}
+            {/* Sidebar with refresh trigger */}
+            <Sidebar
+              key={`sidebar-${refreshTrigger}`}
+              selectedChatId={selectedChat?._id}
+              onSelectChat={(chat) => setSelectedChat(chat)}
+            />
+
+            {/* Chat Window */}
             <div className="flex-1 flex flex-col h-full min-w-0">
-              <ChatWindow activeUser={selectedUser} />
+              <ChatWindow activeChat={selectedChat} />
             </div>
 
-            {/* Profile Drawer / Panel */}
-            {/* {showProfile && (
+            {/* Profile Drawer */}
+            {showProfile && (
               <div className="w-80 h-full border-l border-slate-800">
                 <ProfilePanel
                   key={`${activeProfileUserId || "my-profile"}-${refreshTrigger}`}
                   targetUserId={activeProfileUserId}
                   onFollowChange={handleFollowUpdate}
-                  onStartChat={(user) => {
-                    setSelectedUser(typeof user === "object" ? user : { _id: user });
-                    setShowProfile(false);
-                  }}
+                  onStartChat={handleStartChatFromProfile}
                 />
               </div>
-            )} */}
-
-            // Home.jsx ke andar:
-{showProfile && (
-  <div className="w-80 h-full border-l border-slate-800">
-    <ProfilePanel
-      key={`${activeProfileUserId || "my-profile"}-${refreshTrigger}`}
-      targetUserId={activeProfileUserId}
-      onFollowChange={handleFollowUpdate}
-      onStartChat={(userObj) => {
-        // userObj direct selectedUser banega
-        setSelectedUser(userObj);
-        setShowProfile(false); // Chat view par aane ke liye profile close
-      }}
-    />
-  </div>
-)}
+            )}
           </>
         ) : (
-          /* Logged Out Graphic Placeholder */
-          <div className="flex-1 flex flex-col items-center justify-center bg-slate-950 p-6 text-center select-none">
-            <div className="max-w-md flex flex-col items-center">
-              <div className="w-40 h-40 rounded-full bg-slate-900 border border-slate-800/80 flex items-center justify-center mb-6 shadow-2xl">
-                <svg
-                  className="w-20 h-20 text-slate-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="1.2"
-                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                  />
-                </svg>
-              </div>
-
-              <h2 className="text-2xl font-medium text-slate-300 mb-2 tracking-tight">
-                Chat Application for Web
-              </h2>
-              <p className="text-slate-400 text-sm max-w-xs leading-relaxed mb-12">
-                Send and receive messages without keeping your phone online.
-              </p>
-
-              <div className="flex items-center gap-2 text-xs text-slate-400">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                <span>End-to-end encrypted</span>
-              </div>
-            </div>
+          <div className="flex-1 flex items-center justify-center text-slate-500">
+            Please login to continue
           </div>
         )}
       </div>

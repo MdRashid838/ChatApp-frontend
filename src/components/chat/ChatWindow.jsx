@@ -2,44 +2,39 @@ import { useEffect, useState, useRef } from "react";
 import API from "../../api/axios";
 import socket from "../../socket/socket";
 
-function ChatWindow({ activeUser }) {
+function ChatWindow({ activeChat }) {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Target User ID extract karein (object ya direct ID dono handle honge)
-  const targetUserId =
-    activeUser?._id || (typeof activeUser === "string" ? activeUser : null);
+  const chatId = activeChat?._id;
   const currentUserId = localStorage.getItem("userId");
 
-  // Auto-scroll to bottom on message update
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  // Opponent user details extract karein
+  const otherUser =
+    activeChat?.participants?.find(
+      (p) => (p._id || p).toString() !== currentUserId?.toString()
+    ) || {};
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   useEffect(() => {
-    // Agar koi user select nahi hai toh reset karo aur request mat bhejo
-    if (!targetUserId) {
+    if (!chatId) {
       setMessages([]);
       return;
     }
 
-    // 1. Fetch conversation history with target user
+    // 1. Fetch Chat Messages
     const fetchMessages = async () => {
       try {
         setLoading(true);
-        const response = await API.get(`/messages/${targetUserId}`);
-        setMessages(response.data || []);
-      } catch (error) {
-        console.error(
-          "Failed to fetch messages:",
-          error.response?.data || error.message
-        );
+        const res = await API.get(`/messages/${chatId}`);
+        setMessages(res.data || []);
+      } catch (err) {
+        console.error("Messages fetch error:", err.response?.data || err.message);
       } finally {
         setLoading(false);
       }
@@ -47,21 +42,19 @@ function ChatWindow({ activeUser }) {
 
     fetchMessages();
 
-    // 2. Real-time Socket Setup
+    // 2. Socket Room Join & Listener
     if (socket) {
-      socket.emit("joinChat", targetUserId);
+      socket.emit("joinChat", chatId);
 
-      const handleReceiveMessage = (incomingMsg) => {
-        const sender = incomingMsg.senderId || incomingMsg.sender || incomingMsg.userId;
-        const receiver = incomingMsg.receiverId || incomingMsg.receiver;
+      const handleReceiveMessage = (newMsg) => {
+        const msgChatId = newMsg.chatId || newMsg.chat?._id || newMsg.chat;
 
-        // Sirf tab add karein jab message is conversation ka ho
-        if (
-          sender === targetUserId ||
-          receiver === targetUserId ||
-          sender === currentUserId
-        ) {
-          setMessages((prev) => [...prev, incomingMsg]);
+        if (msgChatId?.toString() === chatId.toString()) {
+          setMessages((prev) => {
+            const exists = prev.some((m) => m._id === newMsg._id);
+            if (exists) return prev;
+            return [...prev, newMsg];
+          });
         }
       };
 
@@ -71,127 +64,91 @@ function ChatWindow({ activeUser }) {
         socket.off("receiveMessage", handleReceiveMessage);
       };
     }
-  }, [targetUserId, currentUserId]);
+  }, [chatId]);
 
-  // Send Message Handler
+  // Send Message
   const sendMessage = async () => {
-    if (!text.trim() || !targetUserId) return;
+    if (!text.trim() || !chatId) return;
 
     const messageText = text.trim();
-    setText(""); // Optimistic input clear
-
-    const messagePayload = {
-      receiverId: targetUserId,
-      text: messageText,
-      message: messageText, // dono keys provide kar di gayi hain compatibility ke liye
-    };
+    setText("");
 
     try {
-      const response = await API.post("/messages", messagePayload);
-      const savedMessage = response.data;
+      const res = await API.post("/messages", {
+        chatId: chatId,
+        text: messageText,
+      });
 
-      // Local State update
-      setMessages((prev) => [...prev, savedMessage]);
+      const savedMessage = res.data;
 
-      // Socket Emit for instant sync
+      // Local state update
+      setMessages((prev) => {
+        const exists = prev.some((m) => m._id === savedMessage._id);
+        if (exists) return prev;
+        return [...prev, savedMessage];
+      });
+
+      // Socket emit for real-time delivery
       if (socket) {
         socket.emit("sendMessage", savedMessage);
       }
-    } catch (error) {
-      console.error(
-        "Failed to send message:",
-        error.response?.data || error.message
-      );
-      // Agar fail ho jaye toh text wapas restore kar sakte hain
+    } catch (err) {
+      console.error("Send message error:", err.response?.data || err.message);
       setText(messageText);
     }
   };
 
-  // Agar koi user select nahi hai toh placeholder show karein
-  if (!activeUser || !targetUserId) {
+  if (!activeChat || !chatId) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center bg-slate-950 text-slate-500 select-none">
-        <div className="w-16 h-16 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center mb-3">
-          <svg
-            className="w-8 h-8 text-slate-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="1.5"
-              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-            />
-          </svg>
-        </div>
-        <p className="text-sm font-medium text-slate-400">
-          Select a user to start chatting
-        </p>
+        <p className="text-sm font-medium">Select a user to start chatting</p>
       </div>
     );
   }
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-950 text-white min-w-0">
-      {/* Chat Header */}
-      <div className="h-16 border-b border-slate-800 px-6 flex items-center justify-between bg-slate-900/60 shrink-0">
-        <div className="flex items-center gap-3 overflow-hidden">
-          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-sm text-white shrink-0 overflow-hidden">
-            {activeUser.avatar ? (
-              <img
-                src={activeUser.avatar}
-                alt=""
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              activeUser.username?.[0]?.toUpperCase() ||
-              activeUser.name?.[0]?.toUpperCase() ||
-              "U"
-            )}
-          </div>
-          <div className="overflow-hidden text-left">
-            <h3 className="text-sm font-semibold text-white truncate">
-              {activeUser.name || activeUser.username}
-            </h3>
-            <p className="text-xs text-slate-400 truncate">
-              @{activeUser.username || "user"}
-            </p>
-          </div>
+      {/* Header */}
+      <div className="h-16 border-b border-slate-800 px-6 flex items-center gap-3 bg-slate-900/60 shrink-0">
+        <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-sm text-white shrink-0 overflow-hidden">
+          {otherUser.avatar ? (
+            <img src={otherUser.avatar} alt="" className="w-full h-full object-cover" />
+          ) : (
+            otherUser.username?.[0]?.toUpperCase() || "U"
+          )}
+        </div>
+        <div className="overflow-hidden text-left">
+          <h3 className="text-sm font-semibold text-white truncate">
+            {otherUser.name || otherUser.username}
+          </h3>
+          <p className="text-xs text-slate-400 truncate">@{otherUser.username}</p>
         </div>
       </div>
 
-      {/* Messages Scroll Area */}
+      {/* Messages Scroll View */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3 flex flex-col">
         {loading ? (
-          <div className="flex-1 flex items-center justify-center text-slate-500 text-xs">
-            Loading conversation...
-          </div>
+          <div className="text-center text-xs text-slate-500 py-4">Loading messages...</div>
         ) : messages.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-slate-500 text-xs">
-            No messages yet. Send a message to start conversation!
-          </div>
+          <div className="text-center text-xs text-slate-500 py-4">No messages yet. Say hi!</div>
         ) : (
-          messages.map((msg, index) => {
-            const sender =
-              msg.senderId?._id || msg.senderId || msg.sender || msg.userId;
-            const isMe =
-              sender?.toString() === currentUserId?.toString();
+          messages.map((msg, idx) => {
+            const senderId = msg.sender?._id || msg.sender;
+            const isMe = senderId?.toString() === currentUserId?.toString();
 
             return (
               <div
-                key={msg._id || index}
+                key={msg._id || idx}
                 className={`flex w-full ${isMe ? "justify-end" : "justify-start"}`}
               >
                 <div
                   className={`max-w-[70%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
                     isMe
-                      ? "bg-emerald-600 text-white rounded-br-none shadow-md shadow-emerald-950/40"
+                      ? "bg-emerald-600 text-white rounded-br-none shadow-md"
                       : "bg-slate-800 text-slate-100 rounded-bl-none border border-slate-700/50"
                   }`}
                 >
-                  <p className="break-words">{msg.text || msg.message}</p>
+                  <p className="break-words">{msg.text}</p>
                 </div>
               </div>
             );
@@ -200,7 +157,7 @@ function ChatWindow({ activeUser }) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Message Input Bar */}
+      {/* Input */}
       <div className="p-4 bg-slate-900 border-t border-slate-800 flex gap-3 items-center shrink-0">
         <input
           type="text"
@@ -208,13 +165,12 @@ function ChatWindow({ activeUser }) {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && sendMessage()}
           placeholder="Type a message..."
-          className="flex-1 px-4 py-3 rounded-full bg-slate-800 text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 border border-slate-700"
+          className="flex-1 px-4 py-3 rounded-full bg-slate-800 text-white text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500 border border-slate-700"
         />
-
         <button
           onClick={sendMessage}
           disabled={!text.trim()}
-          className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-3 rounded-full font-medium text-sm transition-colors text-white shadow-lg shadow-emerald-900/30"
+          className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 px-6 py-3 rounded-full text-sm font-medium transition-colors text-white"
         >
           Send
         </button>
