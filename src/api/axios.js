@@ -1,7 +1,8 @@
 import axios from "axios";
 
+// Environment variable se API URL read karega, fallback me Render URL
 const API = axios.create({
-  baseURL: "http://localhost:5000/api"  || "https://your-backend-service.onrender.com/api",
+  baseURL: import.meta.env.VITE_API_URL || "https://chatapp-backend-191n.onrender.com/api",
 });
 
 API.interceptors.request.use((config) => {
