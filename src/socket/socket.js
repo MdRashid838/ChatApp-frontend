@@ -1,7 +1,12 @@
 import { io } from "socket.io-client";
 
-// Environment variable se Socket URL read karega, fallback me Render URL
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "https://chatapp-backend-191n.onrender.com";
+const isLocal =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1";
+
+const SOCKET_URL = isLocal
+  ? "http://localhost:5000"
+  : "https://chatapp-backend-191n.onrender.com";
 
 const socket = io(SOCKET_URL, {
   transports: ["websocket", "polling"],

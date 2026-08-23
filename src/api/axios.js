@@ -1,17 +1,20 @@
 import axios from "axios";
 
-// Environment variable se API URL read karega, fallback me Render URL
+const isLocal =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1";
+
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "https://chatapp-backend-191n.onrender.com/api",
+  baseURL: isLocal
+    ? "http://localhost:5000/api"
+    : "https://chatapp-backend-191n.onrender.com/api",
 });
 
 API.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
-
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-
   return config;
 });
 
