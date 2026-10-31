@@ -1,59 +1,98 @@
-import React from 'react';
-import { MessageSquareText, Phone, CircleDashed, Users, Settings } from 'lucide-react';
+import React from "react";
+import {
+  MessageSquareText,
+  Phone,
+  CircleDashed,
+  Users,
+  Settings,
+} from "lucide-react";
 
 const Navbar = ({ activeTab, setActiveTab }) => {
+  const navItems = [
+    { id: "chats", icon: MessageSquareText, title: "Chats" },
+    { id: "status", icon: CircleDashed, title: "Status" },
+    { id: "calls", icon: Phone, title: "Calls" },
+    { id: "users", icon: Users, title: "Users" },
+  ];
+
   return (
-    <div className="w-16 bg-slate-900 border-r border-slate-800 flex flex-col justify-between items-center py-6">
-      {/* Top Icons */}
-      <ul className="flex flex-col gap-6">
-        <li 
-          onClick={() => setActiveTab && setActiveTab('chats')}
-          className={`p-3 rounded-xl cursor-pointer transition-all ${
-            activeTab === 'chats' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-          }`}
-          title="Chats"
-        >
-          <MessageSquareText size={24} />
-        </li>
+    <div
+      className="
+        relative
+        grid grid-cols-5
+        w-full h-16
 
-        <li 
-          onClick={() => setActiveTab && setActiveTab('status')}
-          className={`p-3 rounded-xl cursor-pointer transition-all ${
-            activeTab === 'status' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-          }`}
-          title="Status"
-        >
-          <CircleDashed size={24} />
-        </li>
+        md:flex md:flex-col
+        md:w-16 md:h-full
+        md:justify-between
 
-        <li 
-          onClick={() => setActiveTab && setActiveTab('calls')}
-          className={`p-3 rounded-xl cursor-pointer transition-all ${
-            activeTab === 'calls' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-          }`}
-          title="Calls"
-        >
-          <Phone size={24} />
-        </li>
+        items-center
 
-        <li 
-          onClick={() => setActiveTab && setActiveTab('users')}
-          className={`p-3 rounded-xl cursor-pointer transition-all ${
-            activeTab === 'users' ? 'bg-emerald-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-          }`}
-          title="Users / Contacts"
-        >
-          <Users size={24} />
-        </li>
+        bg-[#0D1425]
+
+        px-0 md:px-0
+        py-0 md:py-6
+
+        shrink-0
+      "
+    >
+      {/* Navigation Icons */}
+      <ul
+        className="
+          contents
+          md:flex md:flex-col
+          md:items-center
+          md:justify-start
+          md:gap-6
+        "
+      >
+        {navItems.map(({ id, icon: Icon, title }) => (
+          <li
+            key={id}
+            onClick={() => setActiveTab?.(id)}
+            className={`
+              flex items-center justify-center
+              w-full h-16
+              md:w-12 md:h-12
+
+              rounded-xl
+              cursor-pointer
+              transition-all
+
+              ${
+                activeTab === id
+                  ? "bg-gradient-to-r from-blue-500 to-violet-600 text-white"
+                  : "text-slate-400 hover:text-white hover:bg-white/[0.06]"
+              }
+            `}
+            title={title}
+          >
+            <Icon size={22} />
+          </li>
+        ))}
       </ul>
 
-      {/* Bottom Settings Icon */}
-      <div 
-        onClick={() => setActiveTab && setActiveTab('settings')}
-        className="p-3 rounded-xl cursor-pointer text-slate-400 hover:text-white hover:bg-slate-800 transition-all"
+      {/* Settings */}
+      <div
+        onClick={() => setActiveTab?.("settings")}
+        className={`
+          flex items-center justify-center
+          w-full h-16
+          md:w-12 md:h-12
+
+          rounded-xl
+          cursor-pointer
+          transition-all
+
+          ${
+            activeTab === "settings"
+              ? "bg-gradient-to-r from-blue-500 to-violet-600 text-white"
+              : "text-slate-400 hover:text-white hover:bg-white/[0.06]"
+          }
+        `}
         title="Settings"
       >
-        <Settings size={24} />
+        <Settings size={22} />
       </div>
     </div>
   );

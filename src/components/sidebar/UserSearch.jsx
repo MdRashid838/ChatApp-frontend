@@ -17,16 +17,19 @@ function UserSearch({ onSelectUser, onFollowChange }) {
     const delayTimer = setTimeout(async () => {
       try {
         setLoading(true);
-        const res = await API.get(`/user/search?q=${encodeURIComponent(searchQuery)}`);
-        
-        // Check karo ki current user already follow kar raha hai ya nahi
+
+        const res = await API.get(
+          `/user/search?q=${encodeURIComponent(searchQuery)}`
+        );
+
         const formatted = res.data.map((user) => ({
           ...user,
           isFollowing: user.followers?.some(
-            (f) => (typeof f === "object" ? f._id : f) === currentUserId
+            (f) =>
+              (typeof f === "object" ? f._id : f) === currentUserId
           ),
         }));
-        
+
         setResults(formatted);
       } catch (err) {
         console.error("Search API error:", err);
@@ -38,9 +41,9 @@ function UserSearch({ onSelectUser, onFollowChange }) {
     return () => clearTimeout(delayTimer);
   }, [searchQuery, currentUserId]);
 
-  // Follow / Unfollow Button Click Handler
+  // Follow / Unfollow
   const handleFollowToggle = async (e, user) => {
-    e.stopPropagation(); // Profile card open hone se roko
+    e.stopPropagation();
 
     try {
       if (user.isFollowing) {
@@ -49,22 +52,26 @@ function UserSearch({ onSelectUser, onFollowChange }) {
         await API.post(`/user/follow/${user._id}`);
       }
 
-      // UI me instant button state toggle karo
       setResults((prev) =>
         prev.map((item) =>
-          item._id === user._id ? { ...item, isFollowing: !item.isFollowing } : item
+          item._id === user._id
+            ? { ...item, isFollowing: !item.isFollowing }
+            : item
         )
       );
 
-      // Home & ProfilePanel ko update ka signal bhejo
       if (onFollowChange) {
         onFollowChange();
       }
     } catch (err) {
-      console.error("Follow/Unfollow error:", err.response?.data || err.message);
+      console.error(
+        "Follow/Unfollow error:",
+        err.response?.data || err.message
+      );
     }
   };
 
+  // Select User
   const handleSelect = (user) => {
     onSelectUser(user);
     setSearchQuery("");
@@ -72,17 +79,41 @@ function UserSearch({ onSelectUser, onFollowChange }) {
   };
 
   return (
-    <div className="relative w-64 md:w-80">
-      <div className="relative">
+    <div className="relative w-full min-w-0">
+
+      {/* Search Input */}
+      <div className="relative w-full">
+
         <input
           type="text"
           placeholder="Search users..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full bg-slate-800 text-sm rounded-full pl-9 pr-4 py-2 border border-slate-700 focus:outline-none focus:border-blue-500 text-slate-200 placeholder-slate-400"
+          className="
+            w-full
+            bg-[#080D1A]
+            text-xs sm:text-sm
+            rounded-full
+            pl-9 pr-3 sm:pr-4
+            py-2
+            border border-white/[0.08]
+            focus:outline-none
+            focus:border-blue-500/70
+            focus:ring-2 focus:ring-blue-500/10
+            text-slate-200
+            placeholder-slate-500
+            transition-colors
+          "
         />
+
+        {/* Search Icon */}
         <svg
-          className="w-4 h-4 absolute left-3 top-2.5 text-slate-400"
+          className="
+            w-4 h-4
+            absolute left-3 top-1/2
+            -translate-y-1/2
+            text-slate-400
+          "
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -94,48 +125,120 @@ function UserSearch({ onSelectUser, onFollowChange }) {
             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
           />
         </svg>
+
       </div>
 
+      {/* Search Results Dropdown */}
       {searchQuery.trim() && (
-        <div className="absolute top-12 left-0 w-full bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden max-h-64 overflow-y-auto">
-          {loading && <p className="p-3 text-xs text-slate-400 text-center">Searching...</p>}
+        <div className="
+          absolute
+          top-12
+          left-0
+          w-full
+          min-w-[220px]
+          bg-[#0D1425]
+          border border-white/[0.08]
+          rounded-2xl
+          shadow-2xl shadow-black/40
+          z-[60]
+          overflow-hidden
+          max-h-64
+          overflow-y-auto
+        ">
+
+          {loading && (
+            <p className="p-3 text-xs text-slate-400 text-center">
+              Searching...
+            </p>
+          )}
 
           {!loading && results.length === 0 && (
-            <p className="p-3 text-xs text-slate-400 text-center">No user found</p>
+            <p className="p-3 text-xs text-slate-400 text-center">
+              No user found
+            </p>
           )}
 
           {results.map((user) => (
             <div
               key={user._id}
               onClick={() => handleSelect(user)}
-              className="flex items-center justify-between p-3 hover:bg-slate-800 cursor-pointer border-b border-slate-800/40 last:border-none transition-colors"
+              className="
+                flex items-center justify-between
+                gap-2
+                p-3
+                hover:bg-white/[0.04]
+                cursor-pointer
+                border-b border-white/[0.05]
+                last:border-none
+                transition-colors
+              "
             >
+
               {/* User Info */}
-              <div className="flex items-center gap-3 overflow-hidden">
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
-                  {user.username ? user.username[0].toUpperCase() : "U"}
+              <div className="
+                flex items-center gap-2 sm:gap-3
+                overflow-hidden
+                min-w-0
+                flex-1
+              ">
+
+                <div className="
+                  w-8 h-8
+                  rounded-full
+                  bg-gradient-to-br from-blue-500 to-violet-600
+                  flex items-center justify-center
+                  text-xs font-bold text-white
+                  shrink-0
+                ">
+                  {user.username
+                    ? user.username[0].toUpperCase()
+                    : "U"}
                 </div>
-                <div className="text-left overflow-hidden">
-                  <p className="text-sm font-medium text-white truncate">{user.username}</p>
-                  <p className="text-xs text-slate-400 truncate">{user.name}</p>
+
+                <div className="text-left overflow-hidden min-w-0">
+
+                  <p className="
+                    text-sm font-medium
+                    text-white truncate
+                  ">
+                    {user.username}
+                  </p>
+
+                  <p className="
+                    text-xs text-slate-400 truncate
+                  ">
+                    {user.name}
+                  </p>
+
                 </div>
               </div>
 
-              {/* Follow / Unfollow Button */}
+              {/* Follow / Unfollow */}
               <button
                 onClick={(e) => handleFollowToggle(e, user)}
-                className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${
-                  user.isFollowing
-                    ? "bg-slate-800 text-slate-300 hover:bg-red-500/20 hover:text-red-400 border border-slate-700"
-                    : "bg-blue-600 hover:bg-blue-500 text-white"
-                }`}
+                className={`
+                  text-xs font-semibold
+                  px-2 sm:px-3
+                  py-1.5
+                  rounded-lg
+                  transition-all
+                  shrink-0
+                  ${
+                    user.isFollowing
+                      ? "bg-white/[0.05] text-slate-300 hover:bg-red-500/10 hover:text-red-400 border border-white/[0.08]"
+                      : "bg-gradient-to-r from-blue-500 to-violet-600 hover:from-blue-400 hover:to-violet-500 text-white"
+                  }
+                `}
               >
                 {user.isFollowing ? "Unfollow" : "Follow"}
               </button>
+
             </div>
           ))}
+
         </div>
       )}
+
     </div>
   );
 }
