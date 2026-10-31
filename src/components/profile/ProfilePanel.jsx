@@ -27,6 +27,31 @@ function ProfilePanel({ targetUserId, onFollowChange, onStartChat, onClose }) {
 
   const currentUserId = localStorage.getItem("userId");
 
+  // Close Button - All UI States
+  const closeButton = (
+    <button
+      type="button"
+      onClick={onClose}
+      className="
+        absolute top-4 left-4 z-[100]
+        flex items-center justify-center
+        w-10 h-10
+        rounded-full
+        bg-black/50
+        border border-white/20
+        text-white
+        backdrop-blur-md
+        shadow-lg
+        hover:bg-black/70
+        transition-all
+      "
+      aria-label="Close profile"
+    >
+      <X size={20} />
+    </button>
+  );
+
+  // Fetch Profile
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -104,8 +129,11 @@ function ProfilePanel({ targetUserId, onFollowChange, onStartChat, onClose }) {
   // Loading UI
   if (loading) {
     return (
-      <div className="h-full min-h-[300px] flex flex-col items-center justify-center gap-4 bg-[#0D1425] text-slate-400">
+      <div className="relative isolate min-h-[300px] flex flex-col items-center justify-center gap-4 bg-[#0D1425] text-slate-400">
+        {closeButton}
+
         <div className="w-12 h-12 rounded-full border-4 border-blue-500/20 border-t-blue-500 animate-spin" />
+
         <p className="text-sm">Loading profile...</p>
       </div>
     );
@@ -114,8 +142,11 @@ function ProfilePanel({ targetUserId, onFollowChange, onStartChat, onClose }) {
   // User Not Found
   if (!profile) {
     return (
-      <div className="h-full flex flex-col items-center justify-center gap-3 bg-[#0D1425] text-slate-400">
+      <div className="relative isolate min-h-[300px] flex flex-col items-center justify-center gap-3 bg-[#0D1425] text-slate-400">
+        {closeButton}
+
         <UserRound size={40} className="text-slate-600" />
+
         <p className="text-sm">Profile not found</p>
       </div>
     );
@@ -126,32 +157,15 @@ function ProfilePanel({ targetUserId, onFollowChange, onStartChat, onClose }) {
   const displayName = profile.name || profile.username || "User";
 
   return (
-    <div className="relative flex flex-col h-full min-h-0 overflow-hidden bg-[#0D1425] text-white">
+    <div className="relative isolate flex flex-col min-h-full bg-[#0D1425] text-white">
+      {closeButton}
+
       {/* ================= HEADER ================= */}
 
       <div className="relative shrink-0">
         {/* Cover Background */}
 
         <div className="relative h-36 overflow-hidden bg-gradient-to-br from-blue-700 via-indigo-700 to-violet-800">
-          {/* Mobile Close Button */}
-          <button
-            onClick={onClose}
-            className="
-      absolute top-4 left-4 z-20
-      w-9 h-9
-      rounded-full
-      flex items-center justify-center
-      bg-black/20
-      border border-white/10
-      text-white
-      backdrop-blur-md
-      hover:bg-black/40
-      transition
-    "
-          >
-            <X size={19} />
-          </button>
-
           <div className="absolute -top-16 -right-10 w-48 h-48 rounded-full bg-blue-300/20 blur-3xl" />
 
           <div className="absolute -bottom-20 -left-10 w-48 h-48 rounded-full bg-violet-300/20 blur-3xl" />
@@ -243,6 +257,7 @@ function ProfilePanel({ targetUserId, onFollowChange, onStartChat, onClose }) {
         >
           <div className="flex items-center justify-between">
             <Users size={19} className="text-blue-400" />
+
             <span className="text-xs text-slate-500 group-hover:text-blue-400 transition">
               View
             </span>
@@ -262,6 +277,7 @@ function ProfilePanel({ targetUserId, onFollowChange, onStartChat, onClose }) {
         >
           <div className="flex items-center justify-between">
             <UserPlus size={19} className="text-violet-400" />
+
             <span className="text-xs text-slate-500 group-hover:text-violet-400 transition">
               View
             </span>
@@ -370,11 +386,13 @@ function ProfilePanel({ targetUserId, onFollowChange, onStartChat, onClose }) {
               {listLoading ? (
                 <div className="py-12 flex flex-col items-center gap-3 text-slate-400">
                   <div className="w-9 h-9 rounded-full border-4 border-blue-500/20 border-t-blue-500 animate-spin" />
+
                   <p className="text-sm">Loading users...</p>
                 </div>
               ) : followUsers.length === 0 ? (
                 <div className="py-12 flex flex-col items-center gap-3 text-slate-500">
                   <Users size={35} />
+
                   <p className="text-sm">No users found.</p>
                 </div>
               ) : (

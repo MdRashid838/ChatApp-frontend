@@ -81,14 +81,16 @@ function Home() {
   };
 
   return (
-   <div className="
+    <div
+      className="
   relative flex flex-col
   h-dvh min-h-0 w-full
   overflow-hidden
   bg-[#080D1A]
   text-white
   selection:bg-blue-500/30
-">
+"
+    >
       {/* Background Glow */}
       <div
         className="
@@ -143,8 +145,8 @@ function Home() {
         {isLoggedIn ? (
           <>
             {/* Left Navbar */}
-           <div
-  className="
+            <div
+              className="
     absolute bottom-0 left-0 right-0 z-50
     md:relative md:inset-auto md:z-10
     shrink-0
@@ -154,9 +156,9 @@ function Home() {
     bg-[#0D1425]/95
     backdrop-blur-xl
   "
->
-  <Navbar />
-</div>
+            >
+              <Navbar />
+            </div>
 
             {/* Sidebar */}
             <div
@@ -226,19 +228,23 @@ function Home() {
             </div>
 
             {/* Profile Drawer */}
-            {/* Profile Drawer */}
             {showProfile && (
               <div
                 className="
-      fixed inset-0 z-[60]
-      md:absolute md:inset-y-0 md:right-0 md:left-auto
-      w-full md:w-80
-      h-full
-      overflow-y-auto
-      bg-[#0D1425]
-      border-l border-white/[0.07]
-      shadow-2xl shadow-black/40
-    "
+    absolute
+    top-0 bottom-0
+    left-0 right-0
+    z-40
+    md:top-0 md:bottom-0
+    md:left-auto md:right-0
+    md:w-80
+    overflow-y-auto
+    scrollbar-hide
+    overscroll-contain
+    bg-[#0D1425]
+    border-l border-white/[0.07]
+    shadow-2xl shadow-black/40
+  "
               >
                 <ProfilePanel
                   key={`${activeProfileUserId || "my-profile"}-${refreshTrigger}`}
